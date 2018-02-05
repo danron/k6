@@ -31,7 +31,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func Convert(h HAR, includeCodeCheck bool, returnOnFailedCheck bool, batchTime uint, nobatch bool, only, skip []string) (string, error) {
+func Convert(h HAR, includeCodeCheck bool, returnOnFailedCheck bool, batchTime uint, nobatch bool, correlate bool, only, skip []string) (string, error) {
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
 
@@ -95,13 +95,16 @@ func Convert(h HAR, includeCodeCheck bool, returnOnFailedCheck bool, batchTime u
 		sort.Sort(EntryByStarted(entries))
 
 		if nobatch {
-			fmt.Fprint(w, "\t\tlet res;\n")
-			
+			var redirect string = ""
+
+			fmt.Fprint(w, "\t\tlet res, redirectUrl;\n")
+
 			for _, e := range entries {
 
 				var params []string
 				var cookies []string
 				var body string
+				var urlString string
 
 				if e.Request.PostData != nil {
 					body = e.Request.PostData.Text
@@ -118,8 +121,23 @@ func Convert(h HAR, includeCodeCheck bool, returnOnFailedCheck bool, batchTime u
 					params = append(params, fmt.Sprintf("\"headers\": {\n\t\t\t\t\t%s\n\t\t\t\t}", strings.Join(headers, ",\n\t\t\t\t\t")))
 				}
 
-				fmt.Fprintf(w, "\t\tres = http.%s(%q,\n\t\t\t%q",
-					strings.ToLower(e.Request.Method), e.Request.URL, body)
+				if correlate && redirect != "" {
+					if redirect != e.Request.URL {
+						return "", errors.Errorf("The har file contained a redirect but the next request did not match that redirect. Possibly a misbehaving client or concurrent requests?")
+					}
+					urlString = "redirectUrl"
+					redirect = ""
+				} else {
+					urlString = fmt.Sprintf("%q", e.Request.URL)
+				}
+
+				if method := strings.ToLower(e.Request.Method); method == "get" {
+					fmt.Fprintf(w, "\t\tres = http.%s(%s",
+						method, urlString)
+				} else {
+					fmt.Fprintf(w, "\t\tres = http.%s(%s,\n\t\t\t%q",
+						method, urlString, body)
+				}
 
 				if len(params) > 0 {
 					fmt.Fprintf(w, ",\n\t\t\t{\n\t\t\t\t%s\n\t\t\t}", strings.Join(params, ",\n\t\t\t"))
@@ -133,6 +151,15 @@ func Convert(h HAR, includeCodeCheck bool, returnOnFailedCheck bool, batchTime u
 							fmt.Fprintf(w, "\t\tif (!check(res, {\"status is %v\": (r) => r.status === %v })) { return };\n", e.Response.Status, e.Response.Status)
 						} else {
 							fmt.Fprintf(w, "\t\tcheck(res, {\"status is %v\": (r) => r.status === %v });\n", e.Response.Status, e.Response.Status)
+						}
+					}
+				}
+
+				if e.Response.Headers != nil {
+					for _, header := range e.Response.Headers {
+						if header.Name == "Location" {
+							fmt.Fprintf(w, "\t\tredirectUrl = res.headers.Location;\n")
+							redirect = header.Value
 						}
 					}
 				}
