@@ -55,7 +55,9 @@ func Convert(h HAR, includeCodeCheck bool, returnOnFailedCheck bool, batchTime u
 		fmt.Fprintf(w, "// %v\n", h.Log.Comment)
 	}
 
-	fmt.Fprint(w, "\n")
+	// recordings include redirections as separate requests, and we dont want to trigger them twice
+	fmt.Fprint(w, "\nexport let options = { maxRedirects: 0 };\n\n")
+
 	fmt.Fprint(w, "export default function() {\n\n")
 
 	pages := h.Log.Pages
