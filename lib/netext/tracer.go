@@ -49,18 +49,22 @@ type Trail struct {
 	// Detailed connection information.
 	ConnReused     bool
 	ConnRemoteAddr net.Addr
+
+	// Iteration and VU
+	Iter int64
+	Vu   int64
 }
 
 func (tr Trail) Samples(tags map[string]string) []stats.Sample {
 	return []stats.Sample{
-		{Metric: metrics.HTTPReqs, Time: tr.EndTime, Tags: tags, Value: 1},
-		{Metric: metrics.HTTPReqDuration, Time: tr.EndTime, Tags: tags, Value: stats.D(tr.Duration)},
-		{Metric: metrics.HTTPReqBlocked, Time: tr.EndTime, Tags: tags, Value: stats.D(tr.Blocked)},
-		{Metric: metrics.HTTPReqConnecting, Time: tr.EndTime, Tags: tags, Value: stats.D(tr.Connecting)},
-		{Metric: metrics.HTTPReqSending, Time: tr.EndTime, Tags: tags, Value: stats.D(tr.Sending)},
-		{Metric: metrics.HTTPReqWaiting, Time: tr.EndTime, Tags: tags, Value: stats.D(tr.Waiting)},
-		{Metric: metrics.HTTPReqReceiving, Time: tr.EndTime, Tags: tags, Value: stats.D(tr.Receiving)},
-		{Metric: metrics.HTTPReqTLSHandshaking, Time: tr.EndTime, Tags: tags, Value: stats.D(tr.TLSHandshaking)},
+		{Metric: metrics.HTTPReqs, Time: tr.EndTime, Tags: tags, Value: 1, Iter: tr.Iter, Vu: tr.Vu},
+		{Metric: metrics.HTTPReqDuration, Time: tr.EndTime, Tags: tags, Value: stats.D(tr.Duration), Iter: tr.Iter, Vu: tr.Vu},
+		{Metric: metrics.HTTPReqBlocked, Time: tr.EndTime, Tags: tags, Value: stats.D(tr.Blocked), Iter: tr.Iter, Vu: tr.Vu},
+		{Metric: metrics.HTTPReqConnecting, Time: tr.EndTime, Tags: tags, Value: stats.D(tr.Connecting), Iter: tr.Iter, Vu: tr.Vu},
+		{Metric: metrics.HTTPReqSending, Time: tr.EndTime, Tags: tags, Value: stats.D(tr.Sending), Iter: tr.Iter, Vu: tr.Vu},
+		{Metric: metrics.HTTPReqWaiting, Time: tr.EndTime, Tags: tags, Value: stats.D(tr.Waiting), Iter: tr.Iter, Vu: tr.Vu},
+		{Metric: metrics.HTTPReqReceiving, Time: tr.EndTime, Tags: tags, Value: stats.D(tr.Receiving), Iter: tr.Iter, Vu: tr.Vu},
+		{Metric: metrics.HTTPReqTLSHandshaking, Time: tr.EndTime, Tags: tags, Value: stats.D(tr.TLSHandshaking), Iter: tr.Iter, Vu: tr.Vu},
 	}
 }
 

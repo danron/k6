@@ -27,7 +27,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/cookiejar"
-	"strconv"
 	"time"
 
 	"github.com/dop251/goja"
@@ -349,17 +348,14 @@ func (u *VU) runFn(ctx context.Context, fn goja.Callable, args ...goja.Value) (g
 	t := time.Now()
 
 	tags := map[string]string{}
-	if state.Options.SystemTags["vu"] {
-		tags["vu"] = strconv.FormatInt(u.ID, 10)
-	}
-	if state.Options.SystemTags["iter"] {
-		tags["iter"] = strconv.FormatInt(iter, 10)
-	}
 
 	state.Samples = append(state.Samples,
-		stats.Sample{Time: t, Metric: metrics.DataSent, Value: float64(u.Dialer.BytesWritten), Tags: tags},
-		stats.Sample{Time: t, Metric: metrics.DataReceived, Value: float64(u.Dialer.BytesRead), Tags: tags},
-		stats.Sample{Time: t, Metric: metrics.IterationDuration, Value: stats.D(t.Sub(startTime)), Tags: tags},
+		stats.Sample{Time: t, Metric: metrics.DataSent, Value: float64(u.Dialer.BytesWritten), Tags: tags,
+			Iter: iter, Vu: u.ID},
+		stats.Sample{Time: t, Metric: metrics.DataReceived, Value: float64(u.Dialer.BytesRead), Tags: tags,
+			Iter: iter, Vu: u.ID},
+		stats.Sample{Time: t, Metric: metrics.IterationDuration, Value: stats.D(t.Sub(startTime)), Tags: tags,
+			Iter: iter, Vu: u.ID},
 	)
 
 	if u.Runner.Bundle.Options.NoConnectionReuse.Bool {

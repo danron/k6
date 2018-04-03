@@ -22,7 +22,6 @@ package k6
 
 import (
 	"context"
-	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -72,12 +71,6 @@ func (*K6) Group(ctx context.Context, name string, fn goja.Callable) (goja.Value
 	if state.Options.SystemTags["group"] {
 		tags["group"] = g.Path
 	}
-	if state.Options.SystemTags["vu"] {
-		tags["vu"] = strconv.FormatInt(state.Vu, 10)
-	}
-	if state.Options.SystemTags["iter"] {
-		tags["iter"] = strconv.FormatInt(state.Iteration, 10)
-	}
 
 	state.Samples = append(state.Samples,
 		stats.Sample{
@@ -85,6 +78,8 @@ func (*K6) Group(ctx context.Context, name string, fn goja.Callable) (goja.Value
 			Metric: metrics.GroupDuration,
 			Tags:   tags,
 			Value:  stats.D(t.Sub(startTime)),
+			Iter:   state.Iteration,
+			Vu:     state.Vu,
 		},
 	)
 	return ret, err
@@ -105,12 +100,6 @@ func (*K6) Check(ctx context.Context, arg0, checks goja.Value, extras ...goja.Va
 		for _, k := range obj.Keys() {
 			commonTags[k] = obj.Get(k).String()
 		}
-	}
-	if state.Options.SystemTags["vu"] {
-		commonTags["vu"] = strconv.FormatInt(state.Vu, 10)
-	}
-	if state.Options.SystemTags["iter"] {
-		commonTags["iter"] = strconv.FormatInt(state.Iteration, 10)
 	}
 
 	succ := true
@@ -149,12 +138,12 @@ func (*K6) Check(ctx context.Context, arg0, checks goja.Value, extras ...goja.Va
 			if val.ToBoolean() {
 				atomic.AddInt64(&check.Passes, 1)
 				state.Samples = append(state.Samples,
-					stats.Sample{Time: t, Metric: metrics.Checks, Tags: tags, Value: 1},
+					stats.Sample{Time: t, Metric: metrics.Checks, Tags: tags, Value: 1, Iter: state.Iteration, Vu: state.Vu},
 				)
 			} else {
 				atomic.AddInt64(&check.Fails, 1)
 				state.Samples = append(state.Samples,
-					stats.Sample{Time: t, Metric: metrics.Checks, Tags: tags, Value: 0},
+					stats.Sample{Time: t, Metric: metrics.Checks, Tags: tags, Value: 0, Iter: state.Iteration, Vu: state.Vu},
 				)
 
 				// A single failure makes the return value false.

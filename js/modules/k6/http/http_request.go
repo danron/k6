@@ -201,12 +201,6 @@ func (h *HTTP) request(ctx context.Context, rt *goja.Runtime, state *common.Stat
 	if state.Options.SystemTags["group"] {
 		tags["group"] = state.Group.Path
 	}
-	if state.Options.SystemTags["vu"] {
-		tags["vu"] = strconv.FormatInt(state.Vu, 10)
-	}
-	if state.Options.SystemTags["iter"] {
-		tags["iter"] = strconv.FormatInt(state.Iteration, 10)
-	}
 
 	redirects := state.Options.MaxRedirects
 	timeout := 60 * time.Second
@@ -394,6 +388,9 @@ func (h *HTTP) request(ctx context.Context, rt *goja.Runtime, state *common.Stat
 			req.Header.Set(digest.KEY_AUTHORIZATION, authorization)
 		}
 
+		trail := tracer.Done()
+		trail.Iter = state.Iteration
+		trail.Vu = state.Vu
 		statsSamples = append(statsSamples, tracer.Done().Samples(tags)...)
 	}
 
@@ -425,6 +422,8 @@ func (h *HTTP) request(ctx context.Context, rt *goja.Runtime, state *common.Stat
 		_ = res.Body.Close()
 	}
 	trail := tracer.Done()
+	trail.Iter = state.Iteration
+	trail.Vu = state.Vu
 	if trail.ConnRemoteAddr != nil {
 		remoteHost, remotePortStr, _ := net.SplitHostPort(trail.ConnRemoteAddr.String())
 		remotePort, _ := strconv.Atoi(remotePortStr)

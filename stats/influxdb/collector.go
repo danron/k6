@@ -22,7 +22,6 @@ package influxdb
 
 import (
 	"context"
-	"strconv"
 	"sync"
 	"time"
 
@@ -108,16 +107,11 @@ func (c *Collector) commit() {
 		return
 	}
 
-	var iter, vu int
 	for _, sample := range samples {
-		iter, _ = strconv.Atoi(sample.Tags["iter"])
-		vu, _ = strconv.Atoi(sample.Tags["vu"])
-		delete(sample.Tags, "iter")
-		delete(sample.Tags, "vu")
 		p, err := client.NewPoint(
 			sample.Metric.Name,
 			sample.Tags,
-			map[string]interface{}{"value": sample.Value, "iter": iter, "vu": vu},
+			map[string]interface{}{"value": sample.Value, "iter": sample.Iter, "vu": sample.Vu},
 			sample.Time,
 		)
 		if err != nil {

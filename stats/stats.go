@@ -166,6 +166,8 @@ type Sample struct {
 	Time   time.Time
 	Tags   map[string]string
 	Value  float64
+	Iter   int64
+	Vu     int64
 }
 
 // A Metric defines the shape of a set of data.
