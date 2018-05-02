@@ -148,3 +148,34 @@ func (_aws *AWS) DeleteItem(ctx context.Context, tablename goja.Value, item goja
 
 	return "OK"
 }
+
+/*
+*
+ */
+func (_aws *AWS) GetItem(ctx context.Context, tablename goja.Value, query goja.Value) *map[string]interface{} {
+	av, err := dynamodbattribute.MarshalMap(query.Export())
+	if err != nil {
+		fmt.Println("Got error marshalling map:")
+		fmt.Println(err.Error())
+		return nil
+	}
+	result, err := _aws.dynamodb.GetItem(&dynamodb.GetItemInput{
+		TableName: aws.String(tablename.String()),
+		Key:       av,
+	})
+
+	if err != nil {
+		fmt.Println("Error calling GetItem")
+		fmt.Println(err.Error())
+		return nil
+	}
+
+	item := make(map[string]interface{})
+	err = dynamodbattribute.UnmarshalMap(result.Item, &item)
+
+	if err != nil {
+		panic(fmt.Sprintf("Failed to unmarshal Record, %v", err))
+	}
+
+	return &item
+}
