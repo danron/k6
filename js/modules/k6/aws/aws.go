@@ -2,10 +2,12 @@ package aws
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/dop251/goja"
 	"github.com/loadimpact/k6/js/common"
 )
@@ -16,14 +18,14 @@ type AWS struct {
 }
 
 /*
- * Create a new AWS struct
+* Create a new AWS struct
  */
 func New() *AWS {
 	return &AWS{}
 }
 
 /*
- * Set AWS region.
+* Set AWS region.
  */
 func (_aws *AWS) SetRegion(ctx context.Context, region goja.Value) bool {
 	sess, err := session.NewSession(&aws.Config{
@@ -38,7 +40,7 @@ func (_aws *AWS) SetRegion(ctx context.Context, region goja.Value) bool {
 }
 
 /*
- *
+*
  */
 func (_aws *AWS) CreateTable(ctx context.Context, tablename goja.Value, tabledef goja.Value) string {
 
@@ -92,4 +94,57 @@ func (_aws *AWS) CreateTable(ctx context.Context, tablename goja.Value, tabledef
 	}
 
 	return "Ok"
+}
+
+/*
+*
+ */
+func (_aws *AWS) PutItem(ctx context.Context, tablename goja.Value, item goja.Value) string {
+	av, err := dynamodbattribute.MarshalMap(item.Export())
+	if err != nil {
+		fmt.Println("Got error marshalling map:")
+		fmt.Println(err.Error())
+		return "ERROR"
+	}
+
+	input := &dynamodb.PutItemInput{
+		Item:      av,
+		TableName: aws.String(tablename.String()),
+	}
+
+	s, err := _aws.dynamodb.PutItem(input)
+
+	if err != nil {
+		fmt.Println("Got error calling PutItem:")
+		fmt.Println(err.Error())
+		return "ERROR"
+	}
+	return s.GoString()
+}
+
+/*
+*
+ */
+func (_aws *AWS) DeleteItem(ctx context.Context, tablename goja.Value, item goja.Value) string {
+	av, err := dynamodbattribute.MarshalMap(item.Export())
+	if err != nil {
+		fmt.Println("Got error marshalling map:")
+		fmt.Println(err.Error())
+		return "ERROR"
+	}
+
+	input := &dynamodb.DeleteItemInput{
+		Key:       av,
+		TableName: aws.String(tablename.String()),
+	}
+
+	_, err = _aws.dynamodb.DeleteItem(input)
+
+	if err != nil {
+		fmt.Println("Got error calling DeleteItem")
+		fmt.Println(err.Error())
+		return "ERROR"
+	}
+
+	return "OK"
 }
